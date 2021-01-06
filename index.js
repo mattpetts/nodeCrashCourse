@@ -1,25 +1,82 @@
-// const Person = require('./person');
-// const person1 = new Person('Matt Petts', 28)
-// person1.greeting();
-
-// Include our logger class
-const Logger = require('./Logger');
-const fs = require('fs');
+const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
-// Instantiate the class
-const logger = new Logger();
+const server = http.createServer((req, res) => {
+    // if (req.url === '/') {
+    //     fs.readFile(path.join(__dirname, 'public', 'index.html'), (err, content) => {
+    //         if (err) throw err;
+    //         res.writeHead(200, {'Content-Type' : 'Text/HTML'})
+    //         res.end(content)
+    //     })
+    // }
+    // if (req.url === '/about') {
+    //     fs.readFile(path.join(__dirname, 'public', 'about.html'), (err, content) => {
+    //         if (err) throw err;
+    //         res.writeHead(200, {'Content-Type' : 'Text/HTML'})
+    //         res.end(content)
+    //     })
+    // }
+    // if (req.url === '/api/users') {
+    //     const users = [
+    //         {name: 'Matt Petts', age: 28},
+    //         {name: 'John Doe', age: 50}
+    //     ];
 
-// Set up the emitter
-logger.on('message', data => {
-    console.log(`Called Listener`, data)
+    //     res.writeHead(200, {'Content-Type' : 'application/json'})
+    //     res.end(JSON.stringify(users));
+    // }
 
-    // append to log file
-    fs.appendFile(path.join(__dirname, '/logs', 'logs.txt'), `${data.id}: ${data.msg}\n`, err => {
-        if (err) throw err;
-    });
+    // Build file path
+    let filepath = path.join(__dirname, 'public', req.url === '/' ? 'index.html' : req.url);
+    
+    // Get file extension
+    let extname = path.extname(filepath);
+
+    // Initial content type
+    let contentType = 'text/html';
+
+    // Check ext and set content type
+    switch (extname) {
+        case '.js':
+            contentType = 'text/javascript';
+            break;
+        case '.css':
+            contentType = 'text/css';
+            break;
+        case '.json':
+            contentType = 'application/json';
+            break;
+        case '.png':
+            contentType = 'image/png';
+            break;
+        case '.jpg':
+            contentType = 'image/jpg';
+            break;
+    }
+
+    // Read File
+    fs.readFile(filepath, (err, content) => {
+        if (err) {
+            if (err.code == 'ENOENT') {
+                // Page not found
+                fs.readFile(path.join(__dirname, 'public', '404.html'), (err, content) => {
+                    res.writeHead(200, {'Content-Type' : 'text/html'})
+                    res.end(content, 'utf8');
+                })
+            } else {
+                // Some server Error
+                res.writeHead(500);
+                res.end(`Server Error: ${err.code}`);
+            }
+        } else {
+            // Successful Response
+            res.writeHead(200, {'Content-Type' : contentType});
+            res.end(content);
+        }
+
+    })
 });
 
-// Call an event
-logger.log('Hello World');
-
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => console.log(`Server running on post: ${PORT}`));
